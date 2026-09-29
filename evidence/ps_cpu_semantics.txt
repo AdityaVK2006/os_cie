@@ -1,0 +1,14 @@
+502:     not  conform to the standards that ps otherwise conforms to.  CPU usage is
+503-     unlikely to add up to exactly 100%.
+504-
+505-     The SIZE and RSS fields don't count some parts of a process including  the
+--
+602:     %C	    pcpu     %CPU
+603-     %G	    group    GROUP
+604-     %P	    ppid     PPID
+605-     %U	    user     USER
+--
+635:     %cpu	  %CPU	     cpu utilization of the process in "##.#"  format.
+636-			     Currently, it is the CPU time used divided by the
+637-			     time  the process has been running (cputime/real‐
+638-			     time ratio), expressed as a percentage.  It  will

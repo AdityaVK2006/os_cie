@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System Detective | Live Host</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f1f4f1;
+      --ink: #172321;
+      --muted: #63716d;
+      --line: #d4ddd8;
+      --green: #16745d;
+      --orange: #c34c2e;
+      --blue: #356b91;
+      --white: #fff;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--paper); }
+    header {
+      padding: 25px max(24px, calc((100vw - 1120px) / 2));
+      color: #f7faf8; background: #172321;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    }
+    .eyebrow, .label, th { font: 600 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .eyebrow { color: #95c9b5; }
+    h1 { margin: 5px 0 0; font: 600 25px/1.15 Georgia, serif; letter-spacing: 0; }
+    .live { display: inline-flex; align-items: center; gap: 8px; font: 12px "IBM Plex Mono", monospace; color: #c6d7d0; }
+    .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #80d4a7; box-shadow: 0 0 0 4px #80d4a722; }
+    main { width: min(1120px, calc(100% - 40px)); margin: 30px auto 46px; }
+    .machine { display: grid; grid-template-columns: 1.5fr .7fr .7fr; border-bottom: 1px solid var(--line); padding: 0 0 25px; gap: 22px; }
+    .label { color: var(--muted); }
+    .cpu-name { margin: 8px 0 5px; font: 600 24px/1.2 Georgia, serif; letter-spacing: 0; }
+    .sub { color: var(--muted); font: 13px/1.6 "IBM Plex Mono", monospace; }
+    .metric { padding-left: 20px; border-left: 1px solid var(--line); }
+    .metric strong { display: block; margin: 7px 0 2px; font: 600 26px/1.1 "IBM Plex Mono", monospace; }
+    .meter { height: 6px; margin: 9px 0 7px; background: #dce4df; overflow: hidden; }
+    .meter span { display: block; height: 100%; width: 0; background: var(--green); transition: width .35s ease; }
+    .section { padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; margin-bottom: 13px; }
+    h2 { margin: 0; font: 600 18px/1.3 Georgia, serif; letter-spacing: 0; }
+    .meta { color: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { color: var(--muted); font-size: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    td { padding: 10px; border-bottom: 1px solid #dfe5e1; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    td:first-child { color: var(--muted); }
+    .state { display: inline-block; min-width: 24px; padding: 2px 5px; text-align: center; background: #dcebe4; color: #155c4a; }
+    .bench { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
+    .bars { display: grid; gap: 13px; margin-top: 15px; }
+    .bar-row { display: grid; grid-template-columns: 112px 1fr 84px; gap: 10px; align-items: center; font: 12px "IBM Plex Mono", monospace; }
+    .track { height: 12px; background: #dce4df; }
+    .fill { height: 100%; min-width: 2px; background: var(--blue); transition: width .35s ease; }
+    .bar-row:first-child .fill { background: var(--green); }
+    button { border: 0; padding: 10px 13px; color: white; background: var(--orange); font: 600 12px "IBM Plex Mono", monospace; cursor: pointer; }
+    button:hover { background: #a93d24; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .note { margin: 11px 0 0; color: var(--muted); font: 11px/1.5 "IBM Plex Mono", monospace; }
+    footer { padding-top: 15px; color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+    @media (max-width: 680px) {
+      header { padding: 18px 20px; }
+      main { width: calc(100% - 32px); margin-top: 23px; }
+      .machine { grid-template-columns: 1fr 1fr; }
+      .cpu-block { grid-column: 1 / -1; }
+      .metric { padding-left: 0; border-left: 0; }
+      .bench { grid-template-columns: 1fr; }
+      .bench button { justify-self: start; grid-row: 1; }
+      .bar-row { grid-template-columns: 95px 1fr 76px; gap: 7px; font-size: 10px; }
+      td, th { padding: 8px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div><div class="eyebrow">Computer Organisation / Field Record 01</div><h1>System Detective</h1></div>
+    <div class="live" id="updated">Connecting to host</div>
+  </header>
+  <main>
+    <section class="machine" aria-label="Machine summary">
+      <div class="cpu-block">
+        <div class="label">Processor</div>
+        <div class="cpu-name" id="cpu-name">Reading host data...</div>
+        <div class="sub" id="cpu-detail">Architecture and ISA flags</div>
+      </div>
+      <div class="metric">
+        <div class="label">Memory in use</div>
+        <strong id="mem-used">--</strong>
+        <div class="meter"><span id="mem-meter"></span></div>
+        <div class="sub" id="mem-detail">-- available</div>
+      </div>
+      <div class="metric">
+        <div class="label">Logical CPUs</div>
+        <strong id="cpu-count">--</strong>
+        <div class="sub" id="core-detail">--</div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-head"><h2>Top processes</h2><span class="meta">ordered by ps %CPU</span></div>
+      <table><thead><tr><th>PID</th><th>Process</th><th>State</th><th>CPU %</th><th>MEM %</th></tr></thead><tbody id="process-rows"><tr><td colspan="5">Loading live process list...</td></tr></tbody></table>
+    </section>
+    <section class="section">
+      <div class="section-head"><h2>Memory locality / 4096 x 4096 uint64</h2><span class="meta">3 paired runs</span></div>
+      <div class="bench">
+        <div>
+          <div class="sub" id="speedup">Loading recorded timings...</div>
+          <div class="bars" id="timing-bars"></div>
+          <p class="note">Each traversal visits 16,777,216 elements (128 MiB). Values are measured on this host with CLOCK_MONOTONIC.</p>
+        </div>
+        <button id="rerun">Run locality test</button>
+      </div>
+    </section>
+    <footer>Live source: lscpu, /proc/meminfo, ps. Refreshes every 3 seconds. Bound to localhost.</footer>
+  </main>
+  <script>
+    const byId = (id) => document.getElementById(id);
+    const mib = (bytes) => (bytes / 1048576).toFixed(0) + " MiB";
+
+    function render(data) {
+      const cpu = data.cpu;
+      byId("cpu-name").textContent = cpu.model;
+      byId("cpu-detail").textContent = `${cpu.architecture} / ISA flags: ${cpu.isa_flags.join(", ") || "not reported"}`;
+      byId("cpu-count").textContent = cpu.logical;
+      byId("core-detail").textContent = `${cpu.cores} cores x ${cpu.threads_per_core} threads/core`;
+      byId("mem-used").textContent = `${mib(data.memory.used)} used`;
+      byId("mem-detail").textContent = `${mib(data.memory.available)} available of ${mib(data.memory.total)}`;
+      byId("mem-meter").style.width = `${100 * data.memory.used / data.memory.total}%`;
+      byId("process-rows").innerHTML = data.processes.map((process) =>
+        `<tr><td>${process.pid}</td><td>${process.name}</td><td><span class="state">${process.state}</span></td><td>${process.cpu.toFixed(1)}</td><td>${process.memory.toFixed(1)}</td></tr>`
+      ).join("");
+      const medians = data.locality.median_seconds;
+      const max = medians["column-major"];
+      byId("speedup").textContent = `Median: row-major ${medians["row-major"].toFixed(4)} s / column-major ${max.toFixed(4)} s / ${data.locality.speedup.toFixed(1)}x faster row-major`;
+      byId("timing-bars").innerHTML = ["row-major", "column-major"].map((order) =>
+        `<div class="bar-row"><span>${order}</span><div class="track"><div class="fill" style="width:${100 * medians[order] / max}%"></div></div><span>${medians[order].toFixed(4)} s</span></div>`
+      ).join("");
+      byId("updated").textContent = `LIVE / ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        if (!response.ok) throw new Error(response.statusText);
+        render(await response.json());
+      } catch (error) {
+        byId("updated").textContent = "HOST UNAVAILABLE";
+      }
+    }
+
+    byId("rerun").addEventListener("click", async () => {
+      const button = byId("rerun");
+      button.disabled = true;
+      button.textContent = "Measuring...";
+      try {
+        const response = await fetch("/api/locality", { method: "POST" });
+        render(await response.json());
+      } finally {
+        button.disabled = false;
+        button.textContent = "Run locality test";
+      }
+    });
+
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>

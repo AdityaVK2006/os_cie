@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>System Detective - CIE-1 Report</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #172321; font: 10pt/1.45 "Liberation Sans", sans-serif; }
+    h1, h2 { font-family: "Liberation Serif", Georgia, serif; letter-spacing: 0; }
+    h1 { font-size: 25pt; margin: 2mm 0; }
+    h2 { font-size: 15pt; margin: 0 0 3mm; }
+    p { margin: 2mm 0 3mm; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    .kicker { color: #16745d; font: 700 8pt "Liberation Mono", monospace; text-transform: uppercase; }
+    .sub { color: #63716d; }
+    .identity { margin: 4mm 0 7mm; border-bottom: 1px solid #cbd6d0; padding-bottom: 4mm; }
+    .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 8mm; padding: 3mm 0 5mm; border-bottom: 1px solid #cbd6d0; }
+    .fact { font: 9pt "Liberation Mono", monospace; }
+    .fact b { color: #16745d; }
+    table { width: 100%; border-collapse: collapse; margin: 4mm 0; font: 8.5pt "Liberation Mono", monospace; }
+    th, td { padding: 2mm; border-bottom: 1px solid #d4ddd8; text-align: left; }
+    th { color: #63716d; font-size: 7pt; text-transform: uppercase; }
+    figure { margin: 3mm 0 5mm; }
+    figure img { display: block; width: 650px; height: auto; border: 1px solid #d4ddd8; }
+    figcaption { margin-top: 1.5mm; color: #63716d; font-size: 8pt; }
+    .shot-stack { margin: 0; padding: 0; }
+    .shot-stack figure { margin: 0 0 3mm; break-inside: avoid; }
+    .shot-stack .new-page { break-before: page; }
+    .shot-stack img { display: block; width: 650px; max-width: 100%; height: auto; border: 1px solid #d4ddd8; }
+    .section-note { margin-top: 4mm; padding: 3mm; background: #eef3ef; border-left: 3px solid #16745d; }
+    .footer { margin-top: 4mm; color: #63716d; font: 7pt "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="identity">
+      <div class="kicker">Computer Organisation &amp; Operating Systems / CO1 / 8 marks</div>
+      <h1>System Detective</h1>
+      <div class="sub">CIE-1 machine inspection and memory-locality experiment</div>
+      <p><b>Roll number:</b> ____________________ &nbsp;&nbsp; <b>Name:</b> ____________________</p>
+      <p><b>Machine:</b> Omarchy Linux, x86_64 &nbsp;&nbsp; <b>System commands:</b> 27 September 2026 &nbsp;&nbsp; <b>Locality/screenshots:</b> 27-28 September 2026</p>
+    </div>
+    <h2>Host findings</h2>
+    <p>The machine inspection was run directly on the Linux host, not in a simulated environment. The CPU report identifies an AMD Ryzen 7 7435HS with 8 cores and 16 logical CPUs. The reported instruction flags include SSE2, AVX, AVX2, and AES. `free -h` reported 15 GiB total memory, 6.2 GiB used, and 9.2 GiB available at the command-capture time.</p>
+    <div class="facts">
+      <div class="fact"><b>Architecture</b> x86_64</div>
+      <div class="fact"><b>L3 cache</b> 16 MiB</div>
+      <div class="fact"><b>Logical CPUs</b> 16 (8 cores x 2 threads)</div>
+      <div class="fact"><b>Matrix</b> 4096 x 4096 uint64_t / 128 MiB</div>
+    </div>
+    <h2 style="margin-top:5mm">Locality experiment</h2>
+    <p>The same initialized matrix was read once in each order. In C row-major layout, adjacent columns are contiguous. The column-major loop jumps 32 KiB between consecutive reads of a column. The program was compiled with GCC using <code>-O2 -fno-tree-vectorize</code>, disabling automatic loop vectorization for both orders. Both orders produced the same checksum. Across three paired runs, the median row-major time was 0.009116 s and the median column-major time was 0.823384 s, about 90.3x slower for the strided traversal on this run.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Order</th><th>Seconds</th><th>Checksum</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>row-major</td><td>0.009115695</td><td>2097144125</td></tr>
+        <tr><td>1</td><td>column-major</td><td>0.824955201</td><td>2097144125</td></tr>
+        <tr><td>2</td><td>column-major</td><td>0.823384134</td><td>2097144125</td></tr>
+        <tr><td>2</td><td>row-major</td><td>0.008714712</td><td>2097144125</td></tr>
+        <tr><td>3</td><td>row-major</td><td>0.010915033</td><td>2097144125</td></tr>
+        <tr><td>3</td><td>column-major</td><td>0.804405443</td><td>2097144125</td></tr>
+      </tbody>
+    </table>
+    <div class="section-note">Benchmark timings are specific to this machine and run conditions. CPU load, compiler, kernel, and cache state can change measured times.</div>
+    <div class="footer">System commands 2026-09-27; locality and screenshots through 2026-09-28 / page 1</div>
+  </section>
+
+  <section class="page">
+    <div class="kicker">Live-data dashboard</div>
+    <h2 style="font-size:21pt; margin:2mm 0">One view, current host</h2>
+    <p>The dashboard refreshes CPU identification, memory availability, and the five highest `ps %CPU` rows every three seconds. Process states are displayed as reported by `ps`; the locality timings are read from the saved benchmark results and can be refreshed with the run button.</p>
+    <figure><img src="evidence/screenshots/06_locality_live.png" alt="Live locality dashboard panel"><figcaption>Figure 1. Dashboard locality panel showing the host's measured medians and paired-run count.</figcaption></figure>
+    <figure><img src="evidence/screenshots/01_dashboard_live.png" alt="Full live System Detective dashboard"><figcaption>Figure 2. Dashboard running locally at 127.0.0.1:8765. Values visible in this capture are live readings at screenshot time.</figcaption></figure>
+    <div class="section-note"><b>Commands captured:</b> `lscpu`, `free -h`, `top -b -n 1`, `ps -eLf`, and `strace -c /usr/bin/true`. Full stdout/stderr is retained in the `evidence/` directory alongside the screenshots.</div>
+    <p class="sub">To reproduce the dashboard: compile `locality.c` with GCC, then run `/usr/bin/python dashboard/server.py` and open the local URL. No external services or hardcoded host readings are needed.</p>
+    <div class="footer">System commands 2026-09-27; locality and screenshots through 2026-09-28 / page 2</div>
+  </section>
+
+  <section class="page">
+    <div class="kicker">Raw command evidence</div>
+    <h2 style="font-size:20pt; margin:2mm 0 5mm">Five required Linux tools</h2>
+    <div class="shot-stack">
+      <figure><img src="evidence/screenshots/02_lscpu_capture.png" alt="Captured lscpu output"><figcaption>Figure 3. `lscpu` output: architecture, CPU model, and topology.</figcaption></figure>
+      <figure><img src="evidence/screenshots/03_free_capture.png" alt="Captured free output"><figcaption>Figure 4. `free -h` output: memory and swap at capture time.</figcaption></figure>
+      <figure><img src="evidence/screenshots/07_top_capture.png" alt="Captured top output"><figcaption>Figure 5. `top -b -n 1` batch snapshot.</figcaption></figure>
+      <figure class="new-page"><img src="evidence/screenshots/08_ps-eLf_capture.png" alt="Captured ps thread output"><figcaption>Figure 6. `ps -eLf` process and thread listing.</figcaption></figure>
+      <figure><img src="evidence/screenshots/05_strace_capture.png" alt="Captured strace summary"><figcaption>Figure 7. `strace -c /usr/bin/true` syscall summary.</figcaption></figure>
+    </div>
+    <div class="section-note">The screenshot readings are snapshots, not constants. Rerunning the saved commands on this host produces fresh values.</div>
+    <div class="footer">System commands 2026-09-27; locality and screenshots through 2026-09-28 / page 3</div>
+  </section>
+</body>
+</html>

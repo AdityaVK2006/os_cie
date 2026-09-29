@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AI Interaction Log - System Detective</title>
+  <style>
+    @page { size: A4; margin: 17mm; }
+    body { margin: 0; color: #172321; font: 10.5pt/1.5 "Liberation Sans", sans-serif; }
+    h1, h2 { font-family: "Liberation Serif", Georgia, serif; letter-spacing: 0; }
+    h1 { font-size: 24pt; margin: 2mm 0 5mm; }
+    h2 { font-size: 15pt; margin: 6mm 0 2mm; }
+    .kicker { color: #16745d; font: 700 8pt "Liberation Mono", monospace; text-transform: uppercase; }
+    .entry { padding: 3mm 4mm; background: #eef3ef; border-left: 3px solid #16745d; margin: 3mm 0; }
+    .label { color: #63716d; font: 700 8pt "Liberation Mono", monospace; text-transform: uppercase; }
+    code, pre { font-family: "Liberation Mono", monospace; }
+    pre { white-space: pre-wrap; font-size: 8pt; padding: 3mm; background: #f3f5f3; }
+    a { color: #16745d; }
+    .footer { position: fixed; bottom: -9mm; color: #63716d; font: 7pt "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <div class="kicker">CIE-1 / transparency record</div>
+  <h1>AI Interaction Log</h1>
+  <p><b>Tool:</b> GitHub Copilot in VS Code &nbsp; <b>Dates:</b> 2026-09-27 to 2026-09-28</p>
+  <p>This log describes the actual assistance used for this project. The measurements and screenshots were collected from the local Omarchy Linux host; the assistant did not supply or invent the reported machine readings.</p>
+
+  <h2>Selected prompts and responses</h2>
+  <div class="entry">
+    <div class="label">Prompt 1 / investigation setup</div>
+    <p>“I have a C program that walks through a large two-dimensional array, and I want to understand whether cache locality changes its runtime on Linux. Can you help me design a small reproducible investigation using real host measurements instead of assumed hardware specifications?”</p>
+    <p><b>Response:</b> The assistant suggested recording the host CPU and memory context, capturing process and syscall snapshots, then compiling a benchmark that reads the same matrix in row-major and column-major order. It recommended saving the raw command output and benchmark rows so every reported observation could be checked later.</p>
+  </div>
+  <div class="entry">
+    <div class="label">Prompt 2 / benchmark design</div>
+    <p>“Can you implement the comparison so both traversals process exactly the same initialized matrix, print a checksum to catch accidental differences, and avoid letting compiler vectorization hide the memory-access pattern?”</p>
+    <p><b>Response:</b> The assistant wrote the row/column traversal experiment, compiled it with GCC using <code>-O2 -fno-tree-vectorize</code>, and ran three paired measurements with the first order alternated. It checked that both loop orders produced checksum <code>2097144125</code> and saved the rows in <code>evidence/locality.csv</code>. It advised describing the timing difference as specific to the machine and run conditions.</p>
+  </div>
+  <div class="entry">
+    <div class="label">Prompt 3 / monitoring check</div>
+    <p>“I’m adding a small localhost page to show the machine context and the busiest processes while the benchmark runs. The page currently calls the process column ‘current CPU percentage’; does the <code>ps %CPU</code> field really mean an instantaneous reading?”</p>
+    <p><b>Response:</b> The assistant checked the installed <code>ps</code> manual instead of assuming the label was correct. It found that <code>%CPU</code> is CPU time divided by elapsed process running time, not an instantaneous sample, and changed the dashboard wording to “ordered by ps %CPU.” The supporting excerpt is saved as <code>evidence/ps_cpu_semantics.txt</code>.</p>
+  </div>
+
+  <h2>AI error, correction, and evidence</h2>
+  <div class="entry">
+    <div class="label">What the AI got wrong</div>
+    <p>The first dashboard draft described its process ranking as “ordered by current CPU %.” That wording implies an instantaneous CPU sample. The dashboard actually obtains this field from `ps %CPU`, whose documented meaning is CPU time divided by elapsed process running time; it is not an instantaneous reading.</p>
+  </div>
+  <div class="entry">
+    <div class="label">Machine evidence that disproved it</div>
+    <p>During validation, the assistant checked the installed `ps` manual and saved the relevant output in `evidence/ps_cpu_semantics.txt`. The local manual states:</p>
+    <pre>%cpu / %CPU: CPU utilization of the process ... Currently, it is the CPU time used divided by the time the process has been running (cputime/real-time ratio), expressed as a percentage.</pre>
+    <p>The live output is independently reproducible with <code>ps -eo pid,stat,comm,%cpu --sort=-%cpu</code>; its captured rows and process states are in `evidence/process_snapshot.txt`. The assistant corrected the dashboard label to “ordered by ps %CPU.” It now names the source metric without claiming it is instantaneous. Recheck this command yourself during your demo.</p>
+  </div>
+
+  <h2>AI contribution and verification</h2>
+  <p>AI was used to draft the benchmark, dashboard, report structure, and this log. In this session, the assistant ran the Linux commands and C program on the host, checked that the row/column checksums match, opened the dashboard, called its status and benchmark endpoints, and verified the `ps` metric meaning using the installed manual. The student should rerun these checks, review the evidence, and personalize the report wording before submission.</p>
+  <div class="footer">AI interaction log / values verified against local command output</div>
+</body>
+</html>

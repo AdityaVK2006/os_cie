@@ -1,0 +1,6 @@
+    PID STAT COMMAND         %CPU
+  47661 Sl   cpptools        18.9
+  43401 Sl   code            15.0
+   3644 Ssl  zen-bin         10.0
+  48721 Sl   code             9.8
+  43371 Sl   code             8.8
